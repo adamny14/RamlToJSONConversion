@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:java="http://www.mulesoft.org/schema/mule/java"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="383331dc-464f-4021-a416-4ae684e4b064" />
+	<flow name="ramltooasFlow" doc:id="f57d576a-b57e-4dc8-80a5-d01f48f94e34" >
+		<file:listener doc:name="On New or Updated File" doc:id="c29fd793-640c-4249-b7f6-799fec9ad76d" directory="\RAML\Raml\" recursive="false">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+			<file:matcher filenamePattern="*.raml" />
+		</file:listener>
+		<java:invoke-static doc:name="Invoke static" doc:id="a2b294a5-86ef-4682-ae30-be1bbbadb573" class="ramlConversion.ramlConversion" method="transalteRAMLToOAS(java.lang.String)" target="convertedRaml">
+			<java:args ><![CDATA[#[path: attributes.path as String]]]></java:args>
+		</java:invoke-static>
+		<logger level="INFO" doc:name="Logger" doc:id="48ad152d-d794-4114-a10e-99433dc8a2e6" message="#[payload]"/>
+		<set-variable value='#[%dw 2.0&#10;import * from dw::core::Strings&#10;---&#10;substringBeforeLast(attributes.path, "\\") ++ "\\" ++ splitBy(attributes.fileName, ".")[0] ++ ".json"]' doc:name="OAS File Name" doc:id="59add235-3612-4a44-863b-76f198867444" variableName="oasFileName"/>
+		<file:write doc:name="Write" doc:id="7e7f7a25-a249-426a-bc97-f107db004de4" config-ref="File_Config" path='#[vars.oasFileName]'>
+			<file:content ><![CDATA[#[vars.convertedRaml]]]></file:content>
+		</file:write>
+	</flow>
+</mule>
